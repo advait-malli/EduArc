@@ -26,25 +26,18 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final isMobile = ResponsiveLayout.isMobile(context);
-    final isDesktop = ResponsiveLayout.isDesktop(context);
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
       body: SafeArea(
-        child: isDesktop
-            ? _buildDesktopLayout(context)
-            : CustomScrollView(
+        child: isMobile
+            ? CustomScrollView(
                 slivers: [
                   SliverToBoxAdapter(
                     child: PrimaryPageHeader(
                       title: 'Home',
                       subtitle: 'Welcome back, ${widget.role}!',
-                      onSettingsPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const SettingsPage()),
-                        );
-                      },
+                      onSettingsPressed: () => showSettingsSheet(context),
                     ),
                   ),
                   SliverPadding(
@@ -56,9 +49,10 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SliverToBoxAdapter(child: SizedBox(height: 24)),
                 ],
-              ),
-      ),
-    );
+              )
+            : _buildDesktopLayout(context),
+       ),
+     );
   }
 
   Widget _buildDesktopLayout(BuildContext context) {
@@ -67,12 +61,7 @@ class _HomePageState extends State<HomePage> {
         PrimaryPageHeader(
           title: 'Home',
           subtitle: 'Welcome back, ${widget.role}!',
-          onSettingsPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SettingsPage()),
-            );
-          },
+          onSettingsPressed: () => showSettingsSheet(context),
         ),
         Expanded(
           child: Padding(
@@ -86,15 +75,9 @@ class _HomePageState extends State<HomePage> {
                       Expanded(
                         child: ListView(
                           children: [
-                            SizedBox(
-                              height: 240,
-                              child: HomeworkCard(role: widget.role),
-                            ),
+                            HomeworkCard(role: widget.role),
                             const SizedBox(height: 20),
-                            const SizedBox(
-                              height: 220,
-                              child: NewsCard(),
-                            ),
+                            const NewsCard(),
                             const SizedBox(height: 20),
                           ],
                         ),
@@ -115,135 +98,25 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildWelcomeSection(BuildContext context, bool isMobile) {
-    final color = Theme.of(context).colorScheme.primary;
-
-    if (isMobile) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: Card(
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [color, color.withValues(alpha: 0.7)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(24),
-            ),
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 6),
-                      Text(
-                        'Welcome back, ${widget.role}!',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onPrimary
-                              .withValues(alpha: 0.9),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      FilledButton(
-                        onPressed: () {},
-                        style: FilledButton.styleFrom(
-                          backgroundColor:
-                              Theme.of(context).colorScheme.onPrimary,
-                          foregroundColor: color,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: const Text(
-                          'View Schedule',
-                          style: TextStyle(fontSize: 12),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Card(
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [color, color.withValues(alpha: 0.7)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: Row(
-          children: [
-            Icon(Icons.school, size: 24, color: color.withValues(alpha: 0.3)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                ', ${widget.role}!',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onPrimary,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 12),
-            FilledButton(
-              onPressed: () {},
-              style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.onPrimary,
-                foregroundColor: color,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 4,
-                ),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: const Text(
-                'View Schedule',
-                style: TextStyle(fontSize: 11),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildMobileLayout(BuildContext context) {
     return SliverList(
       delegate: SliverChildListDelegate([
         SizedBox(
           height: 240,
-          child: HomeworkCard(role: widget.role),
+          child: HomeworkCard(role: widget.role, scrollable: true),
         ),
-        const SizedBox(height: 16),
-        const TimetableCard(),
-        const SizedBox(height: 16),
-        const CalendarCard(),
         const SizedBox(height: 16),
         SizedBox(
-          height: 220,
-          child: const NewsCard(),
+          height: 280,
+          child: const NewsCard(scrollable: true),
         ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 280,
+          child: const TimetableCard(scrollable: true),
+        ),
+        const SizedBox(height: 16),
+        const CalendarCard(),
         const SizedBox(height: 16),
       ]),
     );

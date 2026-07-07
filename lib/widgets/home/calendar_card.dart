@@ -11,6 +11,7 @@ class CalendarCard extends StatelessWidget {
     final firstDayOfMonth = DateTime(now.year, now.month, 1).weekday;
 
     return Card(
+      color: Theme.of(context).colorScheme.surface,
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(

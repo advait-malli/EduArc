@@ -1,13 +1,47 @@
 import 'package:flutter/material.dart';
 import '../../widgets/common/primary_page_header.dart';
+import '../../core/repositories/repository_provider.dart';
+import '../../core/models/user.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   final String role;
 
   const ProfilePage({super.key, required this.role});
 
   @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  User? _user;
+  Map<String, String> _profile = {};
+  bool _isLoading = true;
+  bool _loaded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_loaded) {
+      _loaded = true;
+      _loadData();
+    }
+  }
+
+  Future<void> _loadData() async {
+    final repo = RepositoryProvider.of(context).userRepository;
+    final user = await repo.getCurrentUser();
+    final profile = await repo.getUserProfile();
+    if (mounted) setState(() { _user = user; _profile = profile; _isLoading = false; });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
       body: CustomScrollView(
@@ -51,11 +85,11 @@ class ProfilePage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      _buildProfileItem(context, Icons.person_outline, 'Name', 'John Doe'),
-                      _buildProfileItem(context, Icons.email_outlined, 'Email', 'john.doe@example.com'),
-                      _buildProfileItem(context, Icons.phone_outlined, 'Phone', '+1 234 567 8900'),
-                      _buildProfileItem(context, Icons.school_outlined, 'Class', 'Grade 10 - A'),
-                      _buildProfileItem(context, Icons.calendar_today_outlined, 'Date of Birth', 'January 1, 2010'),
+                      _buildProfileItem(context, Icons.person_outline, 'Name', _user?.name ?? ''),
+                      _buildProfileItem(context, Icons.email_outlined, 'Email', _user?.email ?? ''),
+                      _buildProfileItem(context, Icons.phone_outlined, 'Phone', _profile['phone'] ?? ''),
+                      _buildProfileItem(context, Icons.school_outlined, 'Class', _user?.className ?? ''),
+                      _buildProfileItem(context, Icons.calendar_today_outlined, 'Date of Birth', _profile['dateOfBirth'] ?? ''),
                       const SizedBox(height: 24),
                       SizedBox(
                         width: double.infinity,

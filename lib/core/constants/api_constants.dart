@@ -21,6 +21,7 @@ class ApiConstants {
   static const String messages = '/messages';
   static const String messagesList = '/messages/list';
   static const String messagesSend = '/messages/send';
+  static const String messagesMarkRead = '/messages/mark-read';
   
   static const String notifications = '/notifications';
   static const String notificationsList = '/notifications/list';

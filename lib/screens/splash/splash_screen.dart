@@ -21,10 +21,12 @@ class _SplashScreenState extends State<SplashScreen> {
     await Future.delayed(const Duration(seconds: 1));
 
     final isLoggedIn = await AuthService.isLoggedIn();
+    final token = await AuthService.getToken();
 
     if (!mounted) return;
 
-    if (isLoggedIn) {
+    // Require a valid token to skip login (handles old sessions without one)
+    if (isLoggedIn && token != null && token.isNotEmpty) {
       final role = await AuthService.getUserRole();
       Navigator.pushReplacement(
         context,

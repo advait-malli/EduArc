@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/services/account_service.dart';
-import '../../core/services/auth_service.dart';
-import '../../../screens/auth/login_page.dart';
+import '../../screens/auth/login_page.dart';
 
 /// Dialog for switching between multiple accounts
 class AccountSwitchDialog extends StatefulWidget {

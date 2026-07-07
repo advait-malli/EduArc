@@ -10,6 +10,8 @@ class Homework {
   final DateTime? submittedAt;
   final double? grade;
   final String? feedback;
+  final String? createdBy; // Teacher who created the homework
+  final String? assignedTo; // Student who must submit
 
   Homework({
     required this.id,
@@ -23,6 +25,8 @@ class Homework {
     this.submittedAt,
     this.grade,
     this.feedback,
+    this.createdBy,
+    this.assignedTo,
   });
 
   factory Homework.fromJson(Map<String, dynamic> json) {
@@ -38,6 +42,8 @@ class Homework {
       submittedAt: json['submittedAt'] != null ? DateTime.parse(json['submittedAt']) : null,
       grade: json['grade'] != null ? (json['grade'] as num).toDouble() : null,
       feedback: json['feedback'],
+      createdBy: json['createdBy'],
+      assignedTo: json['assignedTo'],
     );
   }
 
@@ -54,6 +60,8 @@ class Homework {
       'submittedAt': submittedAt?.toIso8601String(),
       'grade': grade,
       'feedback': feedback,
+      'createdBy': createdBy,
+      'assignedTo': assignedTo,
     };
   }
 
@@ -69,6 +77,8 @@ class Homework {
     DateTime? submittedAt,
     double? grade,
     String? feedback,
+    String? createdBy,
+    String? assignedTo,
   }) {
     return Homework(
       id: id ?? this.id,
@@ -82,6 +92,8 @@ class Homework {
       submittedAt: submittedAt ?? this.submittedAt,
       grade: grade ?? this.grade,
       feedback: feedback ?? this.feedback,
+      createdBy: createdBy ?? this.createdBy,
+      assignedTo: assignedTo ?? this.assignedTo,
     );
   }
 

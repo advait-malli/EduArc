@@ -3,7 +3,7 @@ import '../../core/services/auth_service.dart';
 import '../../core/services/account_service.dart';
 import '../../screens/auth/login_page.dart';
 import '../../screens/notifications/notifications_page.dart';
-import '../../screens/settings/settings_page.dart';
+import '../../screens/settings/settings_page.dart' show showSettingsSheet;
 import 'account_switch_dialog.dart';
 
 class PrimaryPageHeader extends StatelessWidget {
@@ -85,15 +85,7 @@ class PrimaryPageHeader extends StatelessWidget {
                 ),
                 IconButton(
                   icon: const Icon(Icons.settings_outlined),
-                  onPressed: onSettingsPressed ??
-                      () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const SettingsPage(),
-                          ),
-                        );
-                      },
+                  onPressed: onSettingsPressed ?? () => showSettingsSheet(context),
                 ),
                 FutureBuilder<Account?>(
                   future: AccountService.getCurrentAccount(),

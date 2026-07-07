@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'account_service.dart';
+import 'api_service.dart';
 
 /// Authentication Service for managing user session
 /// 
@@ -43,20 +44,34 @@ class AuthService {
     return prefs.getString(_tokenKey);
   }
 
-  /// Login with email and password
-  /// Backend: Replace this with ApiService.login call
+  /// Login with email and password (calls server API)
   static Future<Map<String, dynamic>> loginWithPassword(
     String email,
     String password,
   ) async {
-    // TODO: Replace with actual API call
-    // final response = await ApiService().login(email, password);
-    // await _saveUserData(response);
-    // return response;
-    
-    // Mock implementation for now
-    await login(email, 'Student');
-    return {'success': true};
+    final response = await ApiService().login(email, password);
+    final token = response['token'] as String;
+    final user = response['user'] as Map<String, dynamic>;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_isLoggedInKey, true);
+    await prefs.setString(_userRoleKey, user['role'] as String);
+    await prefs.setString(_userEmailKey, user['email'] as String);
+    await prefs.setString(_userNameKey, user['name'] as String);
+    await prefs.setString(_userIdKey, user['id'] as String);
+    await prefs.setString(_tokenKey, token);
+
+    final account = Account(
+      id: user['id'] as String,
+      name: user['name'] as String,
+      email: user['email'] as String,
+      role: user['role'] as String,
+      token: token,
+      lastLogin: DateTime.now(),
+    );
+    await AccountService.addAccount(account);
+
+    return response;
   }
 
   /// Login with email and role (mock implementation)
@@ -98,29 +113,6 @@ class AuthService {
     await AccountService.updateLastLogin(account.id);
   }
 
-  /// Save user data from API response
-  static Future<void> _saveUserData(Map<String, dynamic> userData) async {
-    final prefs = await SharedPreferences.getInstance();
-    final account = Account(
-      id: userData['id'] ?? '',
-      name: userData['name'] ?? '',
-      email: userData['email'] ?? '',
-      role: userData['role'] ?? 'Student',
-      token: userData['token'] ?? '',
-      lastLogin: DateTime.now(),
-    );
-    
-    await prefs.setBool(_isLoggedInKey, true);
-    await prefs.setString(_userIdKey, account.id);
-    await prefs.setString(_userNameKey, account.name);
-    await prefs.setString(_userEmailKey, account.email);
-    await prefs.setString(_userRoleKey, account.role);
-    await prefs.setString(_tokenKey, account.token ?? '');
-    
-    // Save to account service
-    await AccountService.addAccount(account);
-  }
-
   static Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
@@ -138,7 +130,6 @@ class AuthService {
       final index = accounts.indexWhere((a) => a.id == accountId);
       if (index != -1) {
         accounts[index] = accounts[index].copyWith(token: token);
-        final accountsJson = accounts.map((a) => a.toJson()).toList();
         // Note: Would need to save back to AccountService
       }
     }

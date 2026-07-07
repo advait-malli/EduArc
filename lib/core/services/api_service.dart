@@ -110,6 +110,15 @@ class ApiService {
     return _handleResponse(response);
   }
 
+  Future<void> markMessageAsRead(String messageId) async {
+    final response = await http.post(
+      Uri.parse('${ApiConstants.baseUrl}${ApiConstants.messagesMarkRead}'),
+      headers: await _getAuthHeaders(),
+      body: jsonEncode({'messageId': messageId}),
+    );
+    _handleResponse(response);
+  }
+
   // ==================== NOTIFICATION ENDPOINTS ====================
 
   Future<List<Map<String, dynamic>>> getNotifications() async {

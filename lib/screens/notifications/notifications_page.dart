@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../widgets/common/info_row.dart';
 import '../settings/settings_page.dart';
 import '../../core/repositories/notification_repository.dart';
 import '../../core/models/notification.dart';
@@ -43,13 +42,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
   Color _getColor(BuildContext context) =>
       Theme.of(context).colorScheme.primary;
 
-  void _markAsRead(int index) {
-    setState(() {
-      notifications[index] = notifications[index].copyWith(isRead: true);
-    });
-    _repository.markAsRead(notifications[index].id);
-  }
-
   void _markAllAsRead() {
     setState(() {
       notifications = notifications.map((n) => n.copyWith(isRead: true)).toList();
@@ -61,17 +53,23 @@ class _NotificationsPageState extends State<NotificationsPage> {
   Widget build(BuildContext context) {
     final color = _getColor(context);
 
-    if (isLoading) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Notifications')),
-        body: const Center(child: CircularProgressIndicator()),
-      );
-    }
+    final isMobile = MediaQuery.of(context).size.width < 600;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Notifications'),
-        actions: [
+    final header = Padding(
+      padding: EdgeInsets.fromLTRB(isMobile ? 4 : 12, 16, isMobile ? 16 : 24, 12),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.pop(context),
+          ),
+          Expanded(
+            child: Text(
+              'Notifications',
+              style: Theme.of(context).textTheme.headlineMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.done_all),
             tooltip: 'Mark all as read',
@@ -88,15 +86,31 @@ class _NotificationsPageState extends State<NotificationsPage> {
             icon: const Icon(Icons.settings_outlined),
             tooltip: 'Settings',
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SettingsPage()),
-              );
+                showSettingsSheet(context);
             },
           ),
         ],
       ),
-      body: notifications.isEmpty
+    );
+
+    if (isLoading) {
+      return Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
+        body: Column(
+          children: [
+            header,
+            const Expanded(child: Center(child: CircularProgressIndicator())),
+          ],
+        ),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
+      body: Column(
+        children: [
+          header,
+          Expanded(child: notifications.isEmpty
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -152,6 +166,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 }),
               ],
             ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -174,7 +191,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(iconData, color: color, size: 22),
@@ -199,7 +216,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   fontWeight: FontWeight.w600,
                   color: isUnread
                       ? Theme.of(context).colorScheme.onSurface
-                      : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                      : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
             ),
@@ -309,7 +326,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
+                      color: color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(iconData, color: color, size: 32),

@@ -87,7 +87,7 @@ class AttendanceSummary {
     final absentDays = records.where((r) => r.isAbsent).length;
     final leaveDays = records.where((r) => r.isLeave).length;
     final totalDays = records.length;
-    final percentage = totalDays > 0 ? (presentDays / totalDays) * 100 : 0;
+    final percentage = totalDays > 0 ? (presentDays / totalDays) * 100 : 0.0;
 
     return AttendanceSummary(
       totalDays: totalDays,

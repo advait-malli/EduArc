@@ -4,25 +4,49 @@ import '../../widgets/common/progress_ring.dart';
 import '../../core/utils/responsive_layout.dart';
 import '../settings/settings_page.dart';
 import '../../core/services/title_service.dart';
+import '../../core/repositories/repository_provider.dart';
+import '../../core/models/attendance.dart';
 
-class AttendancePage extends StatelessWidget {
+class AttendancePage extends StatefulWidget {
   final String role;
 
   const AttendancePage({super.key, required this.role});
 
   @override
+  State<AttendancePage> createState() => _AttendancePageState();
+}
+
+class _AttendancePageState extends State<AttendancePage> {
+  List<AttendanceRecord> _records = [];
+  AttendanceSummary? _summary;
+  bool _isLoading = true;
+  bool _loaded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_loaded) {
+      _loaded = true;
+      _loadData();
+    }
+  }
+
+  Future<void> _loadData() async {
+    final repo = RepositoryProvider.of(context).attendanceRepository;
+    final records = await repo.getAttendanceRecords();
+    final summary = await repo.getAttendanceSummary();
+    if (mounted) setState(() { _records = records; _summary = summary; _isLoading = false; });
+  }
+
+  @override
   Widget build(BuildContext context) {
     TitleService.setTitle('Attendance');
 
-    final attendanceData = [
-      {'date': '2026-01-13', 'status': 'Present', 'classes': 6},
-      {'date': '2026-01-12', 'status': 'Leave', 'classes': 6},
-      {'date': '2026-01-11', 'status': 'Present', 'classes': 6},
-      {'date': '2026-01-10', 'status': 'Present', 'classes': 6},
-      {'date': '2026-01-09', 'status': 'Absent', 'classes': 6},
-      {'date': '2026-01-08', 'status': 'Present', 'classes': 6},
-      {'date': '2026-01-07', 'status': 'Present', 'classes': 6},
-    ];
+    if (_isLoading) {
+      return Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     final isDesktop = ResponsiveLayout.isDesktop(context);
 
@@ -35,17 +59,14 @@ class AttendancePage extends StatelessWidget {
               title: 'Attendance',
               subtitle: 'View your attendance records',
               onSettingsPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SettingsPage()),
-                );
+                showSettingsSheet(context);
               },
             ),
           ),
           SliverToBoxAdapter(
             child: isDesktop
-                ? _buildDesktopLayout(context, attendanceData)
-                : _buildMobileLayout(context, attendanceData),
+                ? _buildDesktopLayout(context, _records, _summary!)
+                : _buildMobileLayout(context, _records, _summary!),
           ),
         ],
       ),
@@ -54,7 +75,8 @@ class AttendancePage extends StatelessWidget {
 
   Widget _buildDesktopLayout(
     BuildContext context,
-    List<Map<String, dynamic>> attendanceData,
+    List<AttendanceRecord> records,
+    AttendanceSummary summary,
   ) {
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -75,10 +97,10 @@ class AttendancePage extends StatelessWidget {
                           ),
                     ),
                     const SizedBox(height: 24),
-                    const Center(
+                    Center(
                       child: ProgressRing(
-                        completedDays: 110,
-                        totalDays: 120,
+                        completedDays: summary.presentDays,
+                        totalDays: summary.totalDays,
                         size: 160,
                       ),
                     ),
@@ -105,7 +127,7 @@ class AttendancePage extends StatelessWidget {
                     ListView(
                       shrinkWrap: true,
                       physics: const BouncingScrollPhysics(),
-                      children: attendanceData.map((record) {
+                      children: records.map((record) {
                         return _buildAttendanceTile(context, record);
                       }).toList(),
                     ),
@@ -121,7 +143,8 @@ class AttendancePage extends StatelessWidget {
 
   Widget _buildMobileLayout(
     BuildContext context,
-    List<Map<String, dynamic>> attendanceData,
+    List<AttendanceRecord> records,
+    AttendanceSummary summary,
   ) {
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -139,11 +162,11 @@ class AttendancePage extends StatelessWidget {
                         ),
                   ),
                   const SizedBox(height: 24),
-                  const SizedBox(
+                  SizedBox(
                     width: double.infinity,
                     child: ProgressRing(
-                      completedDays: 110,
-                      totalDays: 120,
+                      completedDays: summary.presentDays,
+                      totalDays: summary.totalDays,
                       size: 200,
                     ),
                   ),
@@ -165,7 +188,7 @@ class AttendancePage extends StatelessWidget {
                         ),
                   ),
                   const SizedBox(height: 16),
-                  ...attendanceData.map((record) {
+                  ...records.map((record) {
                     return _buildAttendanceTile(context, record);
                   }),
                 ],
@@ -179,10 +202,10 @@ class AttendancePage extends StatelessWidget {
 
   Widget _buildAttendanceTile(
     BuildContext context,
-    Map<String, dynamic> record,
+    AttendanceRecord record,
   ) {
-    final isPresent = record['status'] == 'Present';
-    final isLeave = record['status'] == 'Leave';
+    final isPresent = record.isPresent;
+    final isLeave = record.isLeave;
 
     final containerColor = isPresent
         ? Theme.of(context).colorScheme.primaryContainer
@@ -198,6 +221,9 @@ class AttendancePage extends StatelessWidget {
 
     final icon = isPresent ? Icons.check : Icons.close;
 
+    final dateStr =
+        '${record.date.year}-${record.date.month.toString().padLeft(2, '0')}-${record.date.day.toString().padLeft(2, '0')}';
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
@@ -205,24 +231,24 @@ class AttendancePage extends StatelessWidget {
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: containerColor.withOpacity(0.2),
+            color: containerColor.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: iconColor, size: 24),
         ),
         title: Text(
-          record['date'] as String,
+          dateStr,
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
-        subtitle: Text('${record['classes']} classes'),
+        subtitle: Text('${record.totalClasses} classes'),
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: containerColor.withOpacity(0.2),
+            color: containerColor.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
-            record['status'] as String,
+            record.status,
             style: TextStyle(
               color: isPresent
                   ? Theme.of(context).colorScheme.onPrimaryContainer

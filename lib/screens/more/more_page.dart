@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../widgets/common/primary_page_header.dart';
-import '../../core/services/auth_service.dart';
 import '../../core/utils/responsive_layout.dart';
-import '../auth/login_page.dart';
 import '../settings/settings_page.dart';
 import '../timetable/timetable_page.dart';
 import '../attendance/attendance_page.dart';
-import '../main/main_screen.dart';
 
 class MorePage extends StatefulWidget {
   final String role;
@@ -39,18 +36,38 @@ class _MorePageState extends State<MorePage> {
   @override
   Widget build(BuildContext context) {
     if (_currentPage != null) {
-      return Scaffold(
-        backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
-        appBar: AppBar(
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: _navigateBack,
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) {
+          if (!didPop) _navigateBack();
+        },
+        child: Scaffold(
+          backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
+          body: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 16, 24, 12),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: _navigateBack,
+                    ),
+                    Expanded(
+                      child: Text(
+                        _currentTitle!,
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(child: _currentPage!),
+            ],
           ),
-          title: Text(_currentTitle!),
         ),
-        body: _currentPage,
       );
     }
 
@@ -62,23 +79,20 @@ class _MorePageState extends State<MorePage> {
             child: PrimaryPageHeader(
               title: 'More',
               subtitle: 'Additional features',
-              onSettingsPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SettingsPage()),
-                );
-              },
+              onSettingsPressed: () => showSettingsSheet(context),
             ),
           ),
           if (ResponsiveLayout.isMobile(context))
             SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   _buildMenuItem(
                     context,
                     title: 'Timetable',
                     icon: Icons.calendar_today_outlined,
+                    isFirst: true,
+                    isLast: false,
                     onTap: () {
                       _navigateToPage(
                         _WrappedTimetablePage(role: widget.role),
@@ -90,6 +104,8 @@ class _MorePageState extends State<MorePage> {
                     context,
                     title: 'Attendance',
                     icon: Icons.groups_outlined,
+                    isFirst: false,
+                    isLast: true,
                     onTap: () {
                       _navigateToPage(
                         _WrappedAttendancePage(role: widget.role),
@@ -137,32 +153,71 @@ class _MorePageState extends State<MorePage> {
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          color: Theme.of(context).colorScheme.primary,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
   Widget _buildMenuItem(
     BuildContext context, {
     required String title,
     required IconData icon,
+    required bool isFirst,
+    required bool isLast,
     required VoidCallback onTap,
   }) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: ListTile(
-        leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-        title: Text(title),
-        trailing: const Icon(Icons.chevron_right),
+    final color = Theme.of(context).colorScheme.primary;
+
+    BorderRadius borderRadius;
+
+    if (isFirst && isLast) {
+      borderRadius = BorderRadius.circular(24);
+    } else if (isFirst) {
+      borderRadius = const BorderRadius.only(
+        topLeft: Radius.circular(24),
+        topRight: Radius.circular(24),
+        bottomLeft: Radius.circular(10),
+        bottomRight: Radius.circular(10),
+      );
+    } else if (isLast) {
+      borderRadius = const BorderRadius.only(
+        topLeft: Radius.circular(10),
+        topRight: Radius.circular(10),
+        bottomLeft: Radius.circular(24),
+        bottomRight: Radius.circular(24),
+      );
+    } else {
+      borderRadius = BorderRadius.circular(10);
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: borderRadius,
+      ),
+      child: InkWell(
+        borderRadius: borderRadius,
         onTap: onTap,
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(100),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 20),
+          ],
+        ),
       ),
     );
   }

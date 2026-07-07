@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../widgets/common/primary_page_header.dart';
 import '../../widgets/common/info_row.dart';
-import '../settings/settings_page.dart';
 import '../../core/services/title_service.dart';
 import '../../core/utils/responsive_layout.dart';
+import '../settings/settings_page.dart';
+import '../../core/repositories/repository_provider.dart';
+import '../../core/models/message.dart';
+import '../../core/utils/subject_helpers.dart';
 
 class CommunicatePage extends StatefulWidget {
   final String role;
@@ -17,47 +20,31 @@ class CommunicatePage extends StatefulWidget {
 class _CommunicatePageState extends State<CommunicatePage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-
-  final List<Map<String, dynamic>> announcements = [
-    {
-      'sender': 'Admin',
-      'role': 'School',
-      'message': 'School will be closed on Friday for maintenance',
-      'time': '1d ago',
-      'icon': Icons.campaign,
-    },
-    {
-      'sender': 'Principal',
-      'role': 'School',
-      'message': 'Parent-teacher meetings next week',
-      'time': '2d ago',
-      'icon': Icons.campaign,
-    },
-  ];
-
-  final List<Map<String, dynamic>> personalMessages = [
-    {
-      'sender': 'Mr. Smith',
-      'role': 'Mathematics',
-      'message': 'Please submit your homework by tomorrow',
-      'time': '2h ago',
-      'icon': Icons.calculate,
-      'unread': true,
-    },
-    {
-      'sender': 'Ms. Johnson',
-      'role': 'Biology',
-      'message': 'Lab session postponed to next week',
-      'time': '5h ago',
-      'icon': Icons.science,
-      'unread': true,
-    },
-  ];
+  List<Message> announcements = [];
+  List<Message> personalMessages = [];
+  bool isLoading = true;
+  bool _loaded = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_loaded) {
+      _loaded = true;
+      _loadData();
+    }
+  }
+
+  Future<void> _loadData() async {
+    final repo = RepositoryProvider.of(context).messageRepository;
+    final ann = await repo.getAnnouncements();
+    final msgs = await repo.getPersonalMessages();
+    if (mounted) setState(() { announcements = ann; personalMessages = msgs; isLoading = false; });
   }
 
   @override
@@ -83,10 +70,7 @@ class _CommunicatePageState extends State<CommunicatePage>
                   title: 'Communicate',
                   subtitle: 'Messages and announcements',
                   onSettingsPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const SettingsPage()),
-                    );
+                      showSettingsSheet(context);
                   },
                 ),
               ),
@@ -155,7 +139,7 @@ class _CommunicatePageState extends State<CommunicatePage>
     );
   }
 
-  Widget _buildMessageList(List<Map<String, dynamic>> messages,
+  Widget _buildMessageList(List<Message> messages,
       {required bool isAnnouncement}) {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
@@ -165,68 +149,126 @@ class _CommunicatePageState extends State<CommunicatePage>
         final color = isAnnouncement
             ? Theme.of(context).colorScheme.primary
             : Theme.of(context).colorScheme.tertiary;
-        final icon = isAnnouncement ? Icons.campaign : (msg['icon'] as IconData);
+        final icon = isAnnouncement
+            ? Icons.campaign
+            : iconForSubject(msg.senderRole ?? '');
+        final isFirst = index == 0;
+        final isLast = index == messages.length - 1;
 
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(12),
-            leading: Stack(
-              alignment: Alignment.topRight,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
+        BorderRadius borderRadius;
+        if (isFirst && isLast) {
+          borderRadius = BorderRadius.circular(24);
+        } else if (isFirst) {
+          borderRadius = const BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+            bottomLeft: Radius.circular(10),
+            bottomRight: Radius.circular(10),
+          );
+        } else if (isLast) {
+          borderRadius = const BorderRadius.only(
+            topLeft: Radius.circular(10),
+            topRight: Radius.circular(10),
+            bottomLeft: Radius.circular(24),
+            bottomRight: Radius.circular(24),
+          );
+        } else {
+          borderRadius = BorderRadius.circular(10);
+        }
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 6),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: borderRadius,
+          ),
+          child: InkWell(
+            borderRadius: borderRadius,
+            onTap: () => _showMessageDetails(context, msg, isAnnouncement),
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Row(
+                children: [
+                  Stack(
+                    alignment: Alignment.topRight,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                        child: Icon(icon, color: color, size: 20),
+                      ),
+                      if (!isAnnouncement && msg.isUnread)
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                    ],
                   ),
-                  child: Icon(
-                    icon,
-                    color: color,
-                    size: 22,
-                  ),
-                ),
-                if (!isAnnouncement && (msg['unread'] as bool))
-                  Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary,
-                      shape: BoxShape.circle,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isAnnouncement
+                              ? msg.senderName
+                              : '${msg.senderName} (${msg.senderRole ?? msg.subject})',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          msg.message,
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 12,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
                   ),
-              ],
+                  const SizedBox(width: 8),
+                  Text(
+                    _formatTime(msg.timestamp),
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
             ),
-            title: Text(
-              isAnnouncement
-                  ? '${msg['sender']}'
-                  : '${msg['sender']} (${msg['role']})',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            subtitle: Text(
-              msg['message']!,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            trailing: Text(
-              msg['time']!,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
-            ),
-            onTap: () => _showMessageDetails(context, msg, isAnnouncement),
           ),
         );
       },
     );
   }
 
-  void _showMessageDetails(BuildContext context, Map<String, dynamic> msg,
-      bool isAnnouncement) {
+  void _showMessageDetails(
+      BuildContext context, Message msg, bool isAnnouncement) {
+    // mark as read if unread
+    if (!isAnnouncement && msg.isUnread) {
+      RepositoryProvider.of(context).messageRepository.markAsRead(msg.id);
+    }
+
     final color = isAnnouncement
         ? Theme.of(context).colorScheme.primary
         : Theme.of(context).colorScheme.tertiary;
-    final icon = isAnnouncement ? Icons.campaign : (msg['icon'] as IconData);
+    final icon = isAnnouncement
+        ? Icons.campaign
+        : iconForSubject(msg.senderRole ?? '');
 
     showModalBottomSheet(
       context: context,
@@ -261,7 +303,7 @@ class _CommunicatePageState extends State<CommunicatePage>
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
+                      color: color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(icon, color: color, size: 32),
@@ -272,12 +314,12 @@ class _CommunicatePageState extends State<CommunicatePage>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          msg['sender'],
+                          msg.senderName,
                           style: Theme.of(context).textTheme.headlineSmall
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         Text(
-                          msg['role'],
+                          msg.senderRole ?? msg.subject,
                           style: TextStyle(
                             color: Colors.grey.shade600,
                             fontSize: 16,
@@ -286,7 +328,7 @@ class _CommunicatePageState extends State<CommunicatePage>
                       ],
                     ),
                   ),
-                  if (!isAnnouncement && (msg['unread'] as bool))
+                  if (!isAnnouncement && msg.isUnread)
                     Container(
                       width: 12,
                       height: 12,
@@ -298,13 +340,13 @@ class _CommunicatePageState extends State<CommunicatePage>
                 ],
               ),
               const SizedBox(height: 24),
-              InfoRow(label: 'From', value: msg['sender']),
+              InfoRow(label: 'From', value: msg.senderName),
               if (!isAnnouncement) ...[
                 const SizedBox(height: 12),
-                InfoRow(label: 'Subject', value: msg['role']),
+                InfoRow(label: 'Subject', value: msg.senderRole ?? msg.subject),
               ],
               const SizedBox(height: 12),
-              InfoRow(label: 'Time', value: msg['time']),
+              InfoRow(label: 'Time', value: _formatTime(msg.timestamp)),
               const SizedBox(height: 24),
               Text(
                 'Message',
@@ -315,7 +357,7 @@ class _CommunicatePageState extends State<CommunicatePage>
               ),
               const SizedBox(height: 8),
               Text(
-                msg['message'],
+                msg.message,
                 style: TextStyle(color: Colors.grey.shade700, height: 1.5),
               ),
               const SizedBox(height: 32),
@@ -336,12 +378,7 @@ class _CommunicatePageState extends State<CommunicatePage>
                       child: FilledButton(
                         onPressed: () {
                           Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content:
-                                  Text('Reply functionality coming soon!'),
-                            ),
-                          );
+                          _showReplySheet(context, msg);
                         },
                         style: FilledButton.styleFrom(
                           padding: const EdgeInsets.all(16),
@@ -360,142 +397,301 @@ class _CommunicatePageState extends State<CommunicatePage>
     );
   }
 
+  String _formatTime(DateTime timestamp) {
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+
+    if (difference.inHours < 1) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inDays < 1) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays}d ago';
+    } else {
+      return '${timestamp.day}/${timestamp.month}/${timestamp.year}';
+    }
+  }
+
   void _showNewMessageSheet(BuildContext context) {
     final color = Theme.of(context).colorScheme.tertiary;
+    final recipientCtrl = TextEditingController();
+    final subjectCtrl = TextEditingController();
+    final messageCtrl = TextEditingController();
+    bool sending = false;
+    final isTeacher = widget.role == 'teacher';
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.9,
-        expand: false,
-        builder: (context, scrollController) => Padding(
-          padding: const EdgeInsets.all(24),
-          child: ListView(
-            physics: const BouncingScrollPhysics(),
-            controller: scrollController,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) => Padding(
+            padding: const EdgeInsets.all(24),
+            child: ListView(
+              physics: const BouncingScrollPhysics(),
+              controller: scrollController,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40, height: 4,
+                    margin: const EdgeInsets.only(bottom: 20),
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.message,
-                      color: color,
-                      size: 32,
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'New Message',
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          'Send a message to students',
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'Recipient',
-                  hintText: 'Enter student name or class',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  prefixIcon: const Icon(Icons.person),
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'Subject',
-                  hintText: 'Enter message subject',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  prefixIcon: const Icon(Icons.subject),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                maxLines: 6,
-                decoration: InputDecoration(
-                  labelText: 'Message',
-                  hintText: 'Type your message here',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  prefixIcon: const Padding(
-                    padding: EdgeInsets.only(left: 12, top: 12),
-                    child: Icon(Icons.message),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 32),
-              Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.tonal(
-                      onPressed: () => Navigator.pop(context),
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.all(16),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Text('Cancel'),
+                      child: Icon(Icons.message, color: Theme.of(context).colorScheme.tertiary, size: 32),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Message sent successfully!'),
-                          ),
-                        );
-                      },
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.all(16),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('New Message', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                          Text(isTeacher ? 'Send a message to students' : 'Send a message to your teacher',
+                            style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
+                        ],
                       ),
-                      child: const Text('Send'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                TextField(
+                  controller: recipientCtrl,
+                  decoration: InputDecoration(
+                    labelText: 'Recipient',
+                    hintText: 'Enter email address',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: const Icon(Icons.person),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: subjectCtrl,
+                  decoration: InputDecoration(
+                    labelText: 'Subject', hintText: 'Enter message subject',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: const Icon(Icons.subject),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: messageCtrl,
+                  maxLines: 6,
+                  decoration: InputDecoration(
+                    labelText: 'Message', hintText: 'Type your message here',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: const Padding(
+                      padding: EdgeInsets.only(left: 12, top: 12),
+                      child: Icon(Icons.message),
                     ),
                   ),
-                ],
-              ),
-              SizedBox(height: MediaQuery.of(context).viewInsets.bottom + 16),
-            ],
+                ),
+                const SizedBox(height: 32),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.tonal(
+                        onPressed: () => Navigator.pop(ctx),
+                        style: FilledButton.styleFrom(padding: const EdgeInsets.all(16)),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: sending ? null : () async {
+                          if (recipientCtrl.text.isEmpty || subjectCtrl.text.isEmpty || messageCtrl.text.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Please fill all fields')),
+                            );
+                            return;
+                          }
+                          setSheetState(() => sending = true);
+                          try {
+                            await RepositoryProvider.of(this.context).messageRepository.sendMessage(
+                              recipientId: recipientCtrl.text,
+                              subject: subjectCtrl.text,
+                              message: messageCtrl.text,
+                            );
+                            if (ctx.mounted) Navigator.pop(ctx);
+                            await _loadData();
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Message sent!')),
+                              );
+                            }
+                          } catch (e) {
+                            setSheetState(() => sending = false);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Failed: $e')),
+                            );
+                          }
+                        },
+                        style: FilledButton.styleFrom(padding: const EdgeInsets.all(16)),
+                        child: sending
+                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Text('Send'),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: MediaQuery.of(context).viewInsets.bottom + 16),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showReplySheet(BuildContext context, Message original) {
+    final color = Theme.of(context).colorScheme.tertiary;
+    final messageCtrl = TextEditingController();
+    bool sending = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
+          maxChildSize: 0.8,
+          expand: false,
+          builder: (context, scrollController) => Padding(
+            padding: const EdgeInsets.all(24),
+            child: ListView(
+              physics: const BouncingScrollPhysics(),
+              controller: scrollController,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40, height: 4,
+                    margin: const EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(Icons.reply, color: color, size: 32),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Reply', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                          Text('To: ${original.senderName}', style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Original message', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey.shade700, fontSize: 13)),
+                      const SizedBox(height: 4),
+                      Text(original.message, style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: messageCtrl,
+                  maxLines: 6,
+                  decoration: InputDecoration(
+                    labelText: 'Your reply', hintText: 'Type your reply here',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: const Padding(
+                      padding: EdgeInsets.only(left: 12, top: 12),
+                      child: Icon(Icons.message),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.tonal(
+                        onPressed: () => Navigator.pop(ctx),
+                        style: FilledButton.styleFrom(padding: const EdgeInsets.all(16)),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: sending ? null : () async {
+                          if (messageCtrl.text.isEmpty) return;
+                          setSheetState(() => sending = true);
+                          try {
+                            await RepositoryProvider.of(this.context).messageRepository.sendMessage(
+                              recipientId: original.senderId,
+                              subject: 'Re: ${original.subject}',
+                              message: messageCtrl.text,
+                            );
+                            if (ctx.mounted) Navigator.pop(ctx);
+                            await _loadData();
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Reply sent!')),
+                              );
+                            }
+                          } catch (e) {
+                            setSheetState(() => sending = false);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Failed: $e')),
+                            );
+                          }
+                        },
+                        style: FilledButton.styleFrom(padding: const EdgeInsets.all(16)),
+                        child: sending
+                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Text('Send Reply'),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: MediaQuery.of(context).viewInsets.bottom + 16),
+              ],
+            ),
           ),
         ),
       ),

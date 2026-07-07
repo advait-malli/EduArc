@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../widgets/common/primary_page_header.dart';
+import '../../core/repositories/repository_provider.dart';
+import '../../core/models/calendar.dart';
 
 class CalendarPage extends StatefulWidget {
   final String role;
@@ -15,20 +17,10 @@ class _CalendarPageState extends State<CalendarPage> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
   CalendarFormat _calendarFormat = CalendarFormat.month;
-  
-  // Sample events
-  final Map<DateTime, List<Map<String, dynamic>>> _events = {
-    DateTime.utc(2025, 1, 20): [
-      {'title': 'Math Test', 'isHoliday': false},
-      {'title': 'Science Project Due', 'isHoliday': false},
-    ],
-    DateTime.utc(2025, 1, 25): [
-      {'title': 'Sports Day', 'isHoliday': true},
-    ],
-    DateTime.utc(2025, 1, 30): [
-      {'title': 'Parent-Teacher Meeting', 'isHoliday': false},
-    ],
-  };
+  List<CalendarEvent> _events = [];
+  List<CalendarEvent> _upcomingEvents = [];
+  bool _isLoading = true;
+  bool _loaded = false;
 
   @override
   void initState() {
@@ -37,7 +29,29 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_loaded) {
+      _loaded = true;
+      _loadData();
+    }
+  }
+
+  Future<void> _loadData() async {
+    final repo = RepositoryProvider.of(context).calendarRepository;
+    final events = await repo.getCalendarEvents();
+    final upcoming = await repo.getUpcomingEvents(limit: 10);
+    if (mounted) setState(() { _events = events; _upcomingEvents = upcoming; _isLoading = false; });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
       body: CustomScrollView(
@@ -71,7 +85,9 @@ class _CalendarPageState extends State<CalendarPage> {
                   });
                 },
                 eventLoader: (day) {
-                  return _events[DateTime.utc(day.year, day.month, day.day)] ?? [];
+                  return _events.where((e) =>
+                    isSameDay(e.startDate, day) || isSameDay(e.endDate, day)
+                  ).toList();
                 },
                 calendarStyle: CalendarStyle(
                   markerDecoration: BoxDecoration(
@@ -79,7 +95,7 @@ class _CalendarPageState extends State<CalendarPage> {
                     shape: BoxShape.circle,
                   ),
                   todayDecoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                     shape: BoxShape.circle,
                   ),
                   selectedDecoration: BoxDecoration(
@@ -116,8 +132,7 @@ class _CalendarPageState extends State<CalendarPage> {
           SliverList(
             delegate: SliverChildBuilderDelegate(
               (context, index) {
-                final eventDate = _events.keys.toList()[index];
-                final events = _events[eventDate]!;
+                final event = _upcomingEvents[index];
                 return Column(
                   children: [
                     Padding(
@@ -133,14 +148,14 @@ class _CalendarPageState extends State<CalendarPage> {
                             child: Column(
                               children: [
                                 Text(
-                                  '${eventDate.day}',
+                                  '${event.startDate.day}',
                                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                         color: Theme.of(context).colorScheme.onPrimaryContainer,
                                         fontWeight: FontWeight.bold,
                                       ),
                                 ),
                                 Text(
-                                  _getMonthAbbreviation(eventDate.month),
+                                  _getMonthAbbreviation(event.startDate.month),
                                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                         color: Theme.of(context).colorScheme.onPrimaryContainer,
                                       ),
@@ -152,13 +167,21 @@ class _CalendarPageState extends State<CalendarPage> {
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              children: events.map((event) => Text(
-                                event['title'],
-                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                      color: event['isHoliday'] ? Colors.red : null,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                              )).toList(),
+                              children: [
+                                Text(
+                                  event.title,
+                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                ),
+                                if (event.description.isNotEmpty)
+                                  Text(
+                                    event.description,
+                                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                              ],
                             ),
                           ),
                         ],
@@ -168,7 +191,7 @@ class _CalendarPageState extends State<CalendarPage> {
                   ],
                 );
               },
-              childCount: _events.length,
+              childCount: _upcomingEvents.length,
             ),
           ),
         ],

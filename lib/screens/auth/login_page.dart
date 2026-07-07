@@ -71,16 +71,24 @@ class _LoginPageState extends State<LoginPage> {
                     const SizedBox(height: 24),
                     FilledButton(
                       onPressed: () async {
-                        await AuthService.login(email.text, role);
-                        
-                        if (!mounted) return;
-                        
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => MainScreen(role: role),
-                          ),
-                        );
+                        try {
+                          final result = await AuthService.loginWithPassword(
+                            email.text, password.text,
+                          );
+                          final userRole = result['user']?['role'] ?? role;
+                          if (!mounted) return;
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => MainScreen(role: userRole),
+                            ),
+                          );
+                        } catch (e) {
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Login failed: $e')),
+                          );
+                        }
                       },
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.all(16),

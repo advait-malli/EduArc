@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/repositories/repository_provider.dart';
 import '../../core/services/search_service.dart';
 
 class SearchPage extends StatefulWidget {
@@ -11,7 +12,9 @@ class SearchPage extends StatefulWidget {
 class _SearchPageState extends State<SearchPage> {
   final TextEditingController _searchController = TextEditingController();
   List<SearchItem> _results = [];
+  List<String> _suggestions = [];
   bool _isSearching = false;
+  bool _loaded = false;
 
   @override
   void dispose() {
@@ -19,19 +22,26 @@ class _SearchPageState extends State<SearchPage> {
     super.dispose();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_loaded) {
+      _loaded = true;
+      _suggestions = RepositoryProvider.of(context).searchRepository.getPopularSuggestions();
+    }
+  }
+
   void _performSearch(String query) {
+    if (!_loaded) return;
     setState(() {
       _isSearching = query.isNotEmpty;
-      _results = SearchService.search(query);
+      _results = RepositoryProvider.of(context).searchRepository.search(query);
     });
   }
 
   void _navigateToResult(SearchItem item) {
-    Navigator.pop(context); // Close search page
-    
-    // Navigate based on route
-    // You'll need to update MainScreen to handle route navigation
-    // For now, we'll just show a snackbar
+    Navigator.pop(context);
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Navigating to ${item.title}')),
     );
@@ -39,32 +49,51 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
-      appBar: AppBar(
-        title: TextField(
-          controller: _searchController,
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: 'Search homework, classes, messages...',
-            border: InputBorder.none,
-            hintStyle: TextStyle(color: Colors.grey.shade400),
-          ),
-          style: const TextStyle(fontSize: 18),
-          onChanged: _performSearch,
-        ),
-        actions: [
-          if (_searchController.text.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.clear),
-              onPressed: () {
-                _searchController.clear();
-                _performSearch('');
-              },
+      body: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              isMobile ? 16 : 24,
+              16,
+              isMobile ? 16 : 24,
+              12,
             ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      hintText: 'Search homework, classes, messages...',
+                      border: InputBorder.none,
+                      hintStyle: TextStyle(color: Colors.grey.shade400),
+                    ),
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 24,
+                        ),
+                    onChanged: _performSearch,
+                  ),
+                ),
+                if (_searchController.text.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () {
+                      _searchController.clear();
+                      _performSearch('');
+                    },
+                  ),
+              ],
+            ),
+          ),
+          Expanded(child: _buildBody()),
         ],
       ),
-      body: _buildBody(),
     );
   }
 
@@ -81,14 +110,6 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildSuggestions() {
-    final suggestions = [
-      'Homework',
-      'Attendance',
-      'Timetable',
-      'Mathematics',
-      'Messages',
-    ];
-
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -102,7 +123,7 @@ class _SearchPageState extends State<SearchPage> {
                 ),
           ),
         ),
-        ...suggestions.map((suggestion) => ListTile(
+        ..._suggestions.map((suggestion) => ListTile(
               leading: const Icon(Icons.search),
               title: Text(suggestion),
               onTap: () {
@@ -142,7 +163,6 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildResults() {
-    // Group results by category
     final groupedResults = <String, List<SearchItem>>{};
     for (final item in _results) {
       groupedResults.putIfAbsent(item.category, () => []).add(item);
@@ -170,7 +190,7 @@ class _SearchPageState extends State<SearchPage> {
                     leading: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: item.color.withOpacity(0.1),
+                        color: item.color.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(item.icon, color: item.color, size: 24),

@@ -57,7 +57,7 @@ class ProgressRing extends StatelessWidget {
                   fontSize: size * 0.08,
                   color: Theme.of(
                     context,
-                  ).colorScheme.onSurface.withOpacity(0.7),
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
               ),
             ],
