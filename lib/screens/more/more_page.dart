@@ -4,6 +4,13 @@ import '../../core/utils/responsive_layout.dart';
 import '../settings/settings_page.dart';
 import '../timetable/timetable_page.dart';
 import '../attendance/attendance_page.dart';
+import '../meal_menu/meal_menu_page.dart';
+import '../transport/transport_page.dart';
+import '../results/results_page.dart';
+import '../remarks/remarks_page.dart';
+import '../syllabus/syllabus_page.dart';
+import '../library/library_page.dart';
+import '../infirmary/infirmary_page.dart';
 
 class MorePage extends StatefulWidget {
   final String role;
@@ -105,7 +112,7 @@ class _MorePageState extends State<MorePage> {
                     title: 'Attendance',
                     icon: Icons.groups_outlined,
                     isFirst: false,
-                    isLast: true,
+                    isLast: false,
                     onTap: () {
                       _navigateToPage(
                         _WrappedAttendancePage(role: widget.role),
@@ -113,41 +120,201 @@ class _MorePageState extends State<MorePage> {
                       );
                     },
                   ),
+                  _buildMenuItem(
+                    context,
+                    title: 'Meal Menu',
+                    icon: Icons.dining_outlined,
+                    isFirst: false,
+                    isLast: false,
+                    onTap: () {
+                      _navigateToPage(
+                        _WrappedMealMenuPage(role: widget.role),
+                        'Meal Menu',
+                      );
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    title: 'School Transport',
+                    icon: Icons.directions_bus_outlined,
+                    isFirst: false,
+                    isLast: false,
+                    onTap: () {
+                      _navigateToPage(
+                        _WrappedTransportPage(role: widget.role),
+                        'School Transport',
+                      );
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    title: 'Results & Performance',
+                    icon: Icons.assessment_outlined,
+                    isFirst: false,
+                    isLast: false,
+                    onTap: () {
+                      _navigateToPage(
+                        _WrappedResultsPage(role: widget.role),
+                        'Results & Performance',
+                      );
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    title: 'Remarks & Achievements',
+                    icon: Icons.rate_review_outlined,
+                    isFirst: false,
+                    isLast: false,
+                    onTap: () {
+                      _navigateToPage(
+                        _WrappedRemarksPage(role: widget.role),
+                        'Remarks & Achievements',
+                      );
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    title: 'Syllabus',
+                    icon: Icons.menu_book_outlined,
+                    isFirst: false,
+                    isLast: false,
+                    onTap: () {
+                      _navigateToPage(
+                        _WrappedSyllabusPage(role: widget.role),
+                        'Syllabus',
+                      );
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    title: 'Library',
+                    icon: Icons.library_books_outlined,
+                    isFirst: false,
+                    isLast: false,
+                    onTap: () {
+                      _navigateToPage(
+                        _WrappedLibraryPage(role: widget.role),
+                        'Library',
+                      );
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    title: 'Infirmary',
+                    icon: Icons.local_hospital_outlined,
+                    isFirst: false,
+                    isLast: true,
+                    onTap: () {
+                      _navigateToPage(
+                        _WrappedInfirmaryPage(role: widget.role),
+                        'Infirmary',
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ]),
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  _buildMenuItem(
+                    context,
+                    title: 'Meal Menu',
+                    icon: Icons.dining_outlined,
+                    isFirst: true,
+                    isLast: false,
+                    onTap: () {
+                      _navigateToPage(
+                        _WrappedMealMenuPage(role: widget.role),
+                        'Meal Menu',
+                      );
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    title: 'School Transport',
+                    icon: Icons.directions_bus_outlined,
+                    isFirst: false,
+                    isLast: false,
+                    onTap: () {
+                      _navigateToPage(
+                        _WrappedTransportPage(role: widget.role),
+                        'School Transport',
+                      );
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    title: 'Results & Performance',
+                    icon: Icons.assessment_outlined,
+                    isFirst: false,
+                    isLast: false,
+                    onTap: () {
+                      _navigateToPage(
+                        _WrappedResultsPage(role: widget.role),
+                        'Results & Performance',
+                      );
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    title: 'Remarks & Achievements',
+                    icon: Icons.rate_review_outlined,
+                    isFirst: false,
+                    isLast: false,
+                    onTap: () {
+                      _navigateToPage(
+                        _WrappedRemarksPage(role: widget.role),
+                        'Remarks & Achievements',
+                      );
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    title: 'Syllabus',
+                    icon: Icons.menu_book_outlined,
+                    isFirst: false,
+                    isLast: false,
+                    onTap: () {
+                      _navigateToPage(
+                        _WrappedSyllabusPage(role: widget.role),
+                        'Syllabus',
+                      );
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    title: 'Library',
+                    icon: Icons.library_books_outlined,
+                    isFirst: false,
+                    isLast: false,
+                    onTap: () {
+                      _navigateToPage(
+                        _WrappedLibraryPage(role: widget.role),
+                        'Library',
+                      );
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    title: 'Infirmary',
+                    icon: Icons.local_hospital_outlined,
+                    isFirst: false,
+                    isLast: true,
+                    onTap: () {
+                      _navigateToPage(
+                        _WrappedInfirmaryPage(role: widget.role),
+                        'Infirmary',
+                      );
+                    },
+                  ),
                   const SizedBox(height: 16),
                 ]),
               ),
             ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.more_horiz,
-                        size: 64,
-                        color: Colors.grey.shade300,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'More',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Coming soon...',
-                        style: TextStyle(color: Colors.grey.shade600),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -248,6 +415,104 @@ class _WrappedAttendancePage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
       body: AttendancePage(role: role),
+    );
+  }
+}
+
+class _WrappedMealMenuPage extends StatelessWidget {
+  final String role;
+
+  const _WrappedMealMenuPage({required this.role});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
+      body: MealMenuPage(role: role),
+    );
+  }
+}
+
+class _WrappedTransportPage extends StatelessWidget {
+  final String role;
+
+  const _WrappedTransportPage({required this.role});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
+      body: TransportPage(role: role),
+    );
+  }
+}
+
+class _WrappedResultsPage extends StatelessWidget {
+  final String role;
+
+  const _WrappedResultsPage({required this.role});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
+      body: ResultsPage(role: role),
+    );
+  }
+}
+
+class _WrappedRemarksPage extends StatelessWidget {
+  final String role;
+
+  const _WrappedRemarksPage({required this.role});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
+      body: RemarksPage(role: role),
+    );
+  }
+}
+
+class _WrappedSyllabusPage extends StatelessWidget {
+  final String role;
+
+  const _WrappedSyllabusPage({required this.role});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
+      body: SyllabusPage(role: role),
+    );
+  }
+}
+
+class _WrappedLibraryPage extends StatelessWidget {
+  final String role;
+
+  const _WrappedLibraryPage({required this.role});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
+      body: LibraryPage(role: role),
+    );
+  }
+}
+
+class _WrappedInfirmaryPage extends StatelessWidget {
+  final String role;
+
+  const _WrappedInfirmaryPage({required this.role});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
+      body: InfirmaryPage(role: role),
     );
   }
 }

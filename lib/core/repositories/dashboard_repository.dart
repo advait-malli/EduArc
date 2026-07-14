@@ -65,4 +65,10 @@ class NewsRepository implements INewsRepository {
     final news = newsJson.map((json) => NewsItem.fromJson(json)).toList();
     return news.take(limit).toList();
   }
+
+  Future<List<NewsItem>> getCirculars({int limit = 20}) async {
+    final List<Map<String, dynamic>> newsJson = await _api.getNewsList(category: 'circular');
+    final news = newsJson.map((json) => NewsItem.fromJson(json)).toList();
+    return news.take(limit).toList();
+  }
 }

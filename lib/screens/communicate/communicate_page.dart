@@ -6,6 +6,7 @@ import '../../core/utils/responsive_layout.dart';
 import '../settings/settings_page.dart';
 import '../../core/repositories/repository_provider.dart';
 import '../../core/models/message.dart';
+import '../../core/models/calendar.dart';
 import '../../core/utils/subject_helpers.dart';
 
 class CommunicatePage extends StatefulWidget {
@@ -22,13 +23,14 @@ class _CommunicatePageState extends State<CommunicatePage>
   late TabController _tabController;
   List<Message> announcements = [];
   List<Message> personalMessages = [];
+  List<NewsItem> circulars = [];
   bool isLoading = true;
   bool _loaded = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -42,9 +44,11 @@ class _CommunicatePageState extends State<CommunicatePage>
 
   Future<void> _loadData() async {
     final repo = RepositoryProvider.of(context).messageRepository;
+    final newsRepo = RepositoryProvider.of(context).newsRepository as dynamic;
     final ann = await repo.getAnnouncements();
     final msgs = await repo.getPersonalMessages();
-    if (mounted) setState(() { announcements = ann; personalMessages = msgs; isLoading = false; });
+    final circ = await newsRepo.getCirculars();
+    if (mounted) setState(() { announcements = ann; personalMessages = msgs; circulars = circ; isLoading = false; });
   }
 
   @override
@@ -86,6 +90,7 @@ class _CommunicatePageState extends State<CommunicatePage>
                       tabs: const [
                         Tab(text: 'Announcements'),
                         Tab(text: 'Messages'),
+                        Tab(text: 'Circulars'),
                       ],
                       onTap: (_) => setState(() {}),
                     ),
@@ -99,6 +104,7 @@ class _CommunicatePageState extends State<CommunicatePage>
                   children: [
                     _buildMessageList(announcements, isAnnouncement: true),
                     _buildMessageList(personalMessages, isAnnouncement: false),
+                    _buildCircularsList(),
                   ],
                 ),
               ),
@@ -253,6 +259,184 @@ class _CommunicatePageState extends State<CommunicatePage>
           ),
         );
       },
+    );
+  }
+
+  Widget _buildCircularsList() {
+    if (circulars.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.campaign_outlined, size: 64, color: Colors.grey.shade400),
+            const SizedBox(height: 16),
+            Text('No circulars', style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
+          ],
+        ),
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: circulars.length,
+      itemBuilder: (context, index) {
+        final circular = circulars[index];
+        final isFirst = index == 0;
+        final isLast = index == circulars.length - 1;
+        BorderRadius borderRadius;
+        if (isFirst && isLast) {
+          borderRadius = BorderRadius.circular(24);
+        } else if (isFirst) {
+          borderRadius = const BorderRadius.only(
+            topLeft: Radius.circular(24), topRight: Radius.circular(24),
+            bottomLeft: Radius.circular(10), bottomRight: Radius.circular(10),
+          );
+        } else if (isLast) {
+          borderRadius = const BorderRadius.only(
+            topLeft: Radius.circular(10), topRight: Radius.circular(10),
+            bottomLeft: Radius.circular(24), bottomRight: Radius.circular(24),
+          );
+        } else {
+          borderRadius = BorderRadius.circular(10);
+        }
+
+        final color = Theme.of(context).colorScheme.primary;
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 6),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: borderRadius,
+          ),
+          child: InkWell(
+            borderRadius: borderRadius,
+            onTap: () => _showCircularBottomSheet(context, circular),
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Row(
+                children: [
+                  Stack(
+                    alignment: Alignment.topRight,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                        child: Icon(Icons.campaign, color: color, size: 20),
+                      ),
+                      if (circular.isImportant)
+                        Container(
+                          width: 10, height: 10,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.error,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(circular.title,
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text(circular.summary,
+                          style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                          maxLines: 2, overflow: TextOverflow.ellipsis),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(_formatTime(circular.publishedDate),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600)),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showCircularBottomSheet(BuildContext context, NewsItem circular) {
+    final color = Theme.of(context).colorScheme.primary;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (context, scrollController) => Padding(
+          padding: const EdgeInsets.all(24),
+          child: ListView(
+            physics: const BouncingScrollPhysics(),
+            controller: scrollController,
+            children: [
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.campaign, color: color, size: 32),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(circular.title,
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                        Text(circular.author ?? 'Administration',
+                          style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              InfoRow(label: 'Published', value: _formatTime(circular.publishedDate)),
+              const SizedBox(height: 24),
+              Text('Details',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text(circular.content,
+                style: TextStyle(color: Colors.grey.shade700, height: 1.5)),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.tonal(
+                  onPressed: () => Navigator.pop(context),
+                  style: FilledButton.styleFrom(padding: const EdgeInsets.all(16)),
+                  child: const Text('Close'),
+                ),
+              ),
+              SizedBox(height: MediaQuery.of(context).viewInsets.bottom + 16),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

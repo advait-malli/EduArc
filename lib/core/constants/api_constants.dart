@@ -39,6 +39,19 @@ class ApiConstants {
   static const String news = '/news';
   static const String newsList = '/news/list';
   
+  static const String transport = '/transport';
+  static const String resultsList = '/results/list';
+  static const String remarksList = '/remarks/list';
+  static const String achievementsList = '/achievements/list';
+  static const String syllabusList = '/syllabus/list';
+  static const String libraryBooks = '/library/books';
+  static const String libraryRecords = '/library/records';
+  static const String libraryIssue = '/library/issue';
+  static const String libraryReturn = '/library/return';
+  static const String infirmaryVisits = '/infirmary/visits';
+  static const String infirmaryProfile = '/infirmary/profile';
+  static const String infirmaryVisit = '/infirmary/visit';
+  
   // Timeout settings
   static const Duration connectionTimeout = Duration(seconds: 30);
   static const Duration receiveTimeout = Duration(seconds: 30);

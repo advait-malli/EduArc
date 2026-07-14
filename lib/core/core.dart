@@ -12,6 +12,12 @@ export 'models/notification.dart' show NotificationModel;
 export 'models/attendance.dart';
 export 'models/timetable.dart';
 export 'models/calendar.dart';
+export 'models/transport.dart';
+export 'models/exam_result.dart';
+export 'models/remark.dart';
+export 'models/syllabus.dart';
+export 'models/library.dart';
+export 'models/infirmary.dart';
 
 // Services
 export 'services/auth_service.dart';
@@ -25,3 +31,9 @@ export 'repositories/message_repository.dart';
 export 'repositories/notification_repository.dart';
 export 'repositories/attendance_repository.dart';
 export 'repositories/dashboard_repository.dart';
+export 'repositories/transport_repository.dart';
+export 'repositories/results_repository.dart';
+export 'repositories/remarks_repository.dart';
+export 'repositories/syllabus_repository.dart';
+export 'repositories/library_repository.dart';
+export 'repositories/infirmary_repository.dart';

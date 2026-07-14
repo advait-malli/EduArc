@@ -6,6 +6,12 @@ import 'attendance_repository.dart';
 import 'notification_repository.dart';
 import 'user_repository.dart';
 import 'search_repository.dart';
+import 'transport_repository.dart';
+import 'results_repository.dart';
+import 'remarks_repository.dart';
+import 'syllabus_repository.dart';
+import 'library_repository.dart';
+import 'infirmary_repository.dart';
 import 'interfaces.dart';
 
 class RepositoryProvider extends InheritedWidget {
@@ -18,6 +24,12 @@ class RepositoryProvider extends InheritedWidget {
   final INotificationRepository notificationRepository;
   final IUserRepository userRepository;
   final ISearchRepository searchRepository;
+  final ITransportRepository transportRepository;
+  final IResultsRepository resultsRepository;
+  final IRemarksRepository remarksRepository;
+  final ISyllabusRepository syllabusRepository;
+  final ILibraryRepository libraryRepository;
+  final IInfirmaryRepository infirmaryRepository;
 
   const RepositoryProvider({
     super.key,
@@ -31,6 +43,12 @@ class RepositoryProvider extends InheritedWidget {
     required this.notificationRepository,
     required this.userRepository,
     required this.searchRepository,
+    required this.transportRepository,
+    required this.resultsRepository,
+    required this.remarksRepository,
+    required this.syllabusRepository,
+    required this.libraryRepository,
+    required this.infirmaryRepository,
   });
 
   static RepositoryProvider of(BuildContext context) {
@@ -52,6 +70,12 @@ class RepositoryProvider extends InheritedWidget {
     notificationRepository: NotificationRepository(),
     userRepository: UserRepository(),
     searchRepository: SearchRepository(),
+    transportRepository: TransportRepository(),
+    resultsRepository: ResultsRepository(),
+    remarksRepository: RemarksRepository(),
+    syllabusRepository: SyllabusRepository(),
+    libraryRepository: LibraryRepository(),
+    infirmaryRepository: InfirmaryRepository(),
     child: child,
   );
 

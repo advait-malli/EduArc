@@ -103,5 +103,11 @@ flutter_launcher_icons:
   web:
     generate: true
     image_path: "lib/assets/icon/icon.png"
-    background_color: "#1e1e1e" # Optional: background color for PWA
-    theme_color: "#1e1e1e"      # Optional: theme color for PWA
+    background_color: "#1e1e1e"
+    theme_color: "#1e1e1e"
+  windows:
+    generate: true
+    image_path: "lib/assets/icon/icon.png"
+  macos:
+    generate: true
+    image_path: "lib/assets/icon/icon.png"

@@ -182,13 +182,135 @@ class ApiService {
 
   // ==================== NEWS ENDPOINTS ====================
 
-  Future<List<Map<String, dynamic>>> getNewsList() async {
+  Future<List<Map<String, dynamic>>> getNewsList({String? category}) async {
+    var url = '${ApiConstants.baseUrl}${ApiConstants.newsList}';
+    if (category != null) url += '?category=$category';
     final response = await http.get(
-      Uri.parse('${ApiConstants.baseUrl}${ApiConstants.newsList}'),
+      Uri.parse(url),
       headers: await _getAuthHeaders(),
     );
     final data = _handleResponse(response);
     return List<Map<String, dynamic>>.from(data['news'] ?? []);
+  }
+
+  // ==================== TRANSPORT ENDPOINTS ====================
+
+  Future<Map<String, dynamic>> getTransport() async {
+    final response = await http.get(
+      Uri.parse('${ApiConstants.baseUrl}${ApiConstants.transport}'),
+      headers: await _getAuthHeaders(),
+    );
+    return _handleResponse(response);
+  }
+
+  // ==================== RESULTS ENDPOINTS ====================
+
+  Future<List<Map<String, dynamic>>> getResultsList() async {
+    final response = await http.get(
+      Uri.parse('${ApiConstants.baseUrl}${ApiConstants.resultsList}'),
+      headers: await _getAuthHeaders(),
+    );
+    final data = _handleResponse(response);
+    return List<Map<String, dynamic>>.from(data['results'] ?? []);
+  }
+
+  // ==================== REMARKS ENDPOINTS ====================
+
+  Future<List<Map<String, dynamic>>> getRemarksList() async {
+    final response = await http.get(
+      Uri.parse('${ApiConstants.baseUrl}${ApiConstants.remarksList}'),
+      headers: await _getAuthHeaders(),
+    );
+    final data = _handleResponse(response);
+    return List<Map<String, dynamic>>.from(data['remarks'] ?? []);
+  }
+
+  // ==================== ACHIEVEMENTS ENDPOINTS ====================
+
+  Future<List<Map<String, dynamic>>> getAchievementsList() async {
+    final response = await http.get(
+      Uri.parse('${ApiConstants.baseUrl}${ApiConstants.achievementsList}'),
+      headers: await _getAuthHeaders(),
+    );
+    final data = _handleResponse(response);
+    return List<Map<String, dynamic>>.from(data['achievements'] ?? []);
+  }
+
+  // ==================== SYLLABUS ENDPOINTS ====================
+
+  Future<List<Map<String, dynamic>>> getSyllabusList() async {
+    final response = await http.get(
+      Uri.parse('${ApiConstants.baseUrl}${ApiConstants.syllabusList}'),
+      headers: await _getAuthHeaders(),
+    );
+    final data = _handleResponse(response);
+    return List<Map<String, dynamic>>.from(data['syllabus'] ?? []);
+  }
+
+  // ==================== LIBRARY ENDPOINTS ====================
+
+  Future<List<Map<String, dynamic>>> getLibraryBooks() async {
+    final response = await http.get(
+      Uri.parse('${ApiConstants.baseUrl}${ApiConstants.libraryBooks}'),
+      headers: await _getAuthHeaders(),
+    );
+    final data = _handleResponse(response);
+    return List<Map<String, dynamic>>.from(data['books'] ?? []);
+  }
+
+  Future<List<Map<String, dynamic>>> getLibraryRecords() async {
+    final response = await http.get(
+      Uri.parse('${ApiConstants.baseUrl}${ApiConstants.libraryRecords}'),
+      headers: await _getAuthHeaders(),
+    );
+    final data = _handleResponse(response);
+    return List<Map<String, dynamic>>.from(data['records'] ?? []);
+  }
+
+  Future<Map<String, dynamic>> issueBook(String bookId) async {
+    final response = await http.post(
+      Uri.parse('${ApiConstants.baseUrl}${ApiConstants.libraryIssue}'),
+      headers: await _getAuthHeaders(),
+      body: jsonEncode({'bookId': bookId}),
+    );
+    return _handleResponse(response);
+  }
+
+  Future<Map<String, dynamic>> returnBook(String recordId) async {
+    final response = await http.post(
+      Uri.parse('${ApiConstants.baseUrl}${ApiConstants.libraryReturn}'),
+      headers: await _getAuthHeaders(),
+      body: jsonEncode({'recordId': recordId}),
+    );
+    return _handleResponse(response);
+  }
+
+  // ==================== INFIRMARY ENDPOINTS ====================
+
+  Future<List<Map<String, dynamic>>> getInfirmaryVisits() async {
+    final response = await http.get(
+      Uri.parse('${ApiConstants.baseUrl}${ApiConstants.infirmaryVisits}'),
+      headers: await _getAuthHeaders(),
+    );
+    final data = _handleResponse(response);
+    return List<Map<String, dynamic>>.from(data['visits'] ?? []);
+  }
+
+  Future<Map<String, dynamic>> getInfirmaryProfile() async {
+    final response = await http.get(
+      Uri.parse('${ApiConstants.baseUrl}${ApiConstants.infirmaryProfile}'),
+      headers: await _getAuthHeaders(),
+    );
+    return _handleResponse(response);
+  }
+
+  Future<Map<String, dynamic>> reportInfirmaryVisit(Map<String, dynamic> visit) async {
+    final response = await http.post(
+      Uri.parse('${ApiConstants.baseUrl}${ApiConstants.infirmaryVisit}'),
+      headers: await _getAuthHeaders(),
+      body: jsonEncode(visit),
+    );
+    return _handleResponse(response);
   }
 
   // ==================== HELPER METHODS ====================

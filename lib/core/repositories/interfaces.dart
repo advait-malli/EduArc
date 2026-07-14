@@ -5,6 +5,12 @@ import '../models/attendance.dart';
 import '../models/calendar.dart';
 import '../models/notification.dart';
 import '../models/user.dart';
+import '../models/transport.dart';
+import '../models/exam_result.dart';
+import '../models/remark.dart';
+import '../models/syllabus.dart';
+import '../models/library.dart';
+import '../models/infirmary.dart';
 import '../services/search_service.dart';
 
 abstract class IHomeworkRepository {
@@ -70,4 +76,34 @@ abstract class IUserRepository {
 abstract class ISearchRepository {
   List<String> getPopularSuggestions();
   List<SearchItem> search(String query);
+}
+
+abstract class ITransportRepository {
+  Future<TransportInfo?> getTransportInfo();
+}
+
+abstract class IResultsRepository {
+  Future<List<ExamResult>> getResults();
+}
+
+abstract class IRemarksRepository {
+  Future<List<Remark>> getRemarks();
+  Future<List<Achievement>> getAchievements();
+}
+
+abstract class ISyllabusRepository {
+  Future<List<Syllabus>> getSyllabus();
+}
+
+abstract class ILibraryRepository {
+  Future<List<LibraryBook>> getBooks();
+  Future<List<LibraryRecord>> getRecords();
+  Future<bool> issueBook(String bookId);
+  Future<bool> returnBook(String recordId);
+}
+
+abstract class IInfirmaryRepository {
+  Future<List<InfirmaryVisit>> getVisits();
+  Future<HealthProfile?> getHealthProfile();
+  Future<bool> reportVisit({required String reason, required String description, String? nurseName, String? medication, String? followUp});
 }
